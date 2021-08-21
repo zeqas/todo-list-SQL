@@ -4,7 +4,7 @@ const router = express.Router()
 const db = require('../../models')
 const Todo = db.Todo
 
-// Create // need modify
+// Create
 router.get('/new', (req, res) => {
   return res.render('new')
 })
@@ -19,45 +19,53 @@ router.post('/', (req, res) => {
 })
 
 // READ
-app.get('/todos/:id', (req, res) => {
+app.get('/:id', (req, res) => {
+  const UserId = req.user.id
   const id = req.params.id
-  return Todo.findByPk(id)
+  return Todo.findOne({
+    where: { id, UserId }
+  })
     // 轉換成 plain object
     .then(todo => res.render('detail', { todo: todo.toJSON() }))
     .catch(error => console.log(error))
 })
 
-// Update need modify
+// Update
 router.get('/:id/edit', (req, res) => {
   const userId = req.user._id
-  const _id = req.params.id
-  return Todo.findOne({ _id, userId })
-    .lean()
-    .then(todo => res.render('edit', { todo }))
+  const id = req.params.id
+  return Todo.findOne({
+    where: { id, userId }
+  })
+    .then(todo => res.render('edit', {todo: todo.get() }))
     .catch(error => console.log(error))
 })
 
 router.put('/:id', (req, res) => {
   const userId = req.user._id
-  const _id = req.params.id
+  const id = req.params.id
   const { name, isDone } = req.body
 
-  return Todo.findOne({ _id, userId })
+  return Todo.findOne({ 
+    where: { id, userId }
+  })
     .then(todo => {
       todo.name = name
       todo.isDone = isDone === 'on'
       return todo.save()
     })
-    .then(() => res.redirect(`/todos/${_id}`))
+    .then(() => res.redirect(`/todos/${id}`))
     .catch(error => console.log(error))
 })
 
-// Delete // need modify
+// Delete
 router.delete('/:id', (req, res) => {
   const userId = req.user._id
-  const _id = req.params.id
-  return Todo.findOne({ _id, userId })
-    .then(todo => todo.remove())
+  const id = req.params.id
+  return Todo.findOne({
+    where: { id, userId }
+  })
+    .then(todo => todo.destroy())
     .then(() => res.redirect('/'))
     .catch(error => console.log(error))
 })
